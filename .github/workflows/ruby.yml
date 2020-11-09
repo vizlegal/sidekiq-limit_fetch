@@ -35,3 +35,7 @@ jobs:
       run: bundle install
     - name: Run tests
       run: bundle exec rake
+    - name: Setup appraisal
+      run: bundle exec appraisal install
+    - name: Run appraisal test
+      run: bundle exec appraisal rake test
