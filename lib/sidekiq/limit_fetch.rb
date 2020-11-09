@@ -14,6 +14,8 @@ module Sidekiq::LimitFetch
   require_relative 'extensions/queue'
   require_relative 'extensions/manager'
 
+  TIMEOUT = Sidekiq::BasicFetch::TIMEOUT
+
   extend self
 
   def new(_)
@@ -27,19 +29,28 @@ module Sidekiq::LimitFetch
   end
 
   def bulk_requeue(*args)
-    Sidekiq::BasicFetch.bulk_requeue(*args)
+    klass = Sidekiq::BasicFetch
+    fetch = klass.respond_to?(:bulk_requeue) ? klass : klass.new(Sidekiq::options)
+    fetch.bulk_requeue(*args)
   end
 
   def redis_retryable
     yield
   rescue Redis::BaseConnectionError
-    sleep 1
+    sleep TIMEOUT
     retry
+  rescue Redis::CommandError => error
+    # If Redis was restarted and is still loading its snapshot,
+    # then we should treat this as a temporary connection error too.
+    if error.message =~ /^LOADING/
+      sleep TIMEOUT
+      retry
+    else
+      raise
+    end
   end
 
   private
-
-  TIMEOUT = Sidekiq::BasicFetch::TIMEOUT
 
   def redis_brpop(queues)
     if queues.empty?
