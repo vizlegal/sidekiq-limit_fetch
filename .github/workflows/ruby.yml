@@ -38,4 +38,4 @@ jobs:
     - name: Setup appraisal
       run: bundle exec appraisal install
     - name: Run appraisal test
-      run: bundle exec appraisal rake test
+      run: bundle exec appraisal rake
