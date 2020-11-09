@@ -27,7 +27,9 @@ module Sidekiq::LimitFetch
   end
 
   def bulk_requeue(*args)
-    Sidekiq::BasicFetch.bulk_requeue(*args)
+    klass = Sidekiq::BasicFetch
+    fetch = klass.respond_to?(:bulk_requeue) ? klass : klass.new(Sidekiq::options)
+    fetch.bulk_requeue(*args)
   end
 
   def redis_retryable
